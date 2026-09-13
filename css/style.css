@@ -463,3 +463,118 @@ body {
     flex-direction: column;
   }
 }
+
+/* Registration type selector */
+.type-selector {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.type-btn {
+  flex: 1 1 160px;
+  padding: 16px 14px;
+  border: 3px solid #8b5a2b;
+  border-radius: 10px;
+  background: #f8f0d8;
+  cursor: pointer;
+  font-family: 'Roboto', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #2c1810;
+  text-align: center;
+  transition: all 0.2s;
+  box-shadow: 2px 2px 0 #5c4033;
+}
+
+.type-btn:hover {
+  background: #fff8e0;
+  transform: translateY(-2px);
+}
+
+.type-btn.active {
+  background: linear-gradient(180deg, #f4c430 0%, #d4a017 100%);
+  border-color: #8b4513;
+  box-shadow: 0 0 0 3px rgba(244,196,48,0.4);
+}
+
+.type-price {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 400;
+  margin-top: 4px;
+  color: #5c4033;
+}
+
+.type-btn.active .type-price {
+  color: #2c1810;
+}
+
+.amount-box {
+  background: #2c1810;
+  color: #f4c430;
+  padding: 14px 18px;
+  border-radius: 8px;
+  font-size: 1.2rem;
+  margin-bottom: 12px;
+  text-align: center;
+  border: 2px solid #8b5a2b;
+}
+
+.amount-box strong {
+  font-size: 1.5rem;
+}
+
+.amount-box span {
+  display: block;
+  font-size: 0.9rem;
+  color: #d4c4a0;
+  margin-top: 4px;
+}
+
+/* UPI Payment Box */
+.upi-box {
+  background: #fffef5;
+  border: 3px solid #8b5a2b;
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  margin: 15px 0;
+  box-shadow: 3px 3px 0 #5c4033;
+}
+
+.upi-box #qrcode {
+  display: inline-block;
+  padding: 12px;
+  background: #fff;
+  border-radius: 8px;
+  margin: 10px 0;
+  border: 2px solid #d4c4a0;
+}
+
+.upi-box #qrcode img {
+  display: block;
+  margin: 0 auto;
+}
+
+.upi-id {
+  font-size: 1.1rem;
+  margin-top: 10px;
+  color: #2c1810;
+  word-break: break-all;
+}
+
+.upi-id strong {
+  color: #8b4513;
+  font-size: 1.15rem;
+}
+
+input[type="file"] {
+  width: 100%;
+  padding: 10px;
+  border: 2px solid #8b5a2b;
+  border-radius: 6px;
+  background: #fffef5;
+  font-size: 0.95rem;
+}
