@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register Team | MPGI Treasure Hunt</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Pirata+One&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <!-- Razorpay Checkout -->
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</head>
+<body>
+  <div class="wooden-bg">
+    <a href="index.html" class="back-link">← Back to Treasure Map</a>
+
+    <div class="main-card">
+      <div class="page-header">
+        <h1>🏴‍☠️ Team Registration</h1>
+        <p>MPGI College Treasure Hunt • Entry Fee ₹380</p>
+      </div>
+
+      <div class="form-container">
+        <form id="regForm">
+          <!-- Captain / Team Info -->
+          <div class="section-title">Captain & Team Details</div>
+
+          <div class="form-group">
+            <label for="teamName">Team Name *</label>
+            <input type="text" id="teamName" name="teamName" required placeholder="e.g. Pirate Crew">
+          </div>
+
+          <div class="form-group">
+            <label for="captainName">Captain's Full Name *</label>
+            <input type="text" id="captainName" name="captainName" required>
+          </div>
+
+          <div class="form-group">
+            <label for="captainEmail">Captain's Email *</label>
+            <input type="email" id="captainEmail" name="captainEmail" required>
+          </div>
+
+          <div class="form-group">
+            <label for="captainPhone">Captain's Phone Number *</label>
+            <input type="tel" id="captainPhone" name="captainPhone" required pattern="[0-9]{10}" placeholder="10-digit number">
+          </div>
+
+          <div class="form-group">
+            <label for="captainCourse">Course & Year *</label>
+            <input type="text" id="captainCourse" name="captainCourse" required placeholder="e.g. B.Tech CSE 3rd Year">
+          </div>
+
+          <!-- Members -->
+          <div class="section-title">Team Members (Minimum 3, Maximum 5 including Captain)</div>
+          <p style="margin-bottom:12px; color:#5c4033; font-size:0.9rem;">
+            Captain is already counted. Add 2 to 4 more members.
+          </p>
+
+          <div id="membersContainer">
+            <!-- Member cards will be added here by JS -->
+          </div>
+
+          <div class="btn-row">
+            <button type="button" class="btn btn-add" id="addMemberBtn">+ Add Member</button>
+          </div>
+
+          <div class="section-title">Payment</div>
+          <p style="margin-bottom:15px; color:#5c4033;">
+            Entry Fee: <strong>₹380</strong> (via Razorpay). After successful payment, your registration details will be sent to the admin via Telegram.
+          </p>
+
+          <div class="btn-row">
+            <button type="submit" class="btn btn-primary" id="payBtn">Pay ₹380 & Register</button>
+          </div>
+
+          <div id="payment-status"></div>
+        </form>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <p>MPGI College Treasure Hunt Competition 2026</p>
+    </footer>
+  </div>
+
+  <script src="js/register.js"></script>
+</body>
+</html>
