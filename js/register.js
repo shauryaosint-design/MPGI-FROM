@@ -1,19 +1,21 @@
 // ===================== CONFIG =====================
-const TELEGRAM_BOT_TOKEN = "8793018598:AAEiFW2qiyKFsuVkJ5vzgsNj21ZRPB0Y4wI";
-const TELEGRAM_CHAT_ID = "6271039736";
-const PAYMENT_LINK = "https://razorpay.me/@realencesolutions";
-const FEE_PER_PERSON = 70; // ₹70 per participant
+const TELEGRAM_BOT_TOKEN = "YOUR_BOT_TOKEN";   // @BotFather se
+const TELEGRAM_CHAT_ID = "YOUR_CHAT_ID";       // Admin chat ID
+const UPI_ID = "shauryaexploits@fam";
+const UPI_NAME = "MPGI Treasure Hunt";
+const FEE_PER_PERSON = 70;
 // ==================================================
 
-let regType = "solo"; // "solo" or "team"
+let regType = "solo";
 let memberCount = 0;
-const MIN_MEMBERS = 2; // additional (total 3)
-const MAX_MEMBERS = 4; // additional (total 5)
+let savedFormData = null;   // store after step 1
+const MIN_MEMBERS = 2;
+const MAX_MEMBERS = 4;
 
 const membersContainer = document.getElementById("membersContainer");
 const addMemberBtn = document.getElementById("addMemberBtn");
 const regForm = document.getElementById("regForm");
-const payBtn = document.getElementById("payBtn");
+const paymentProofForm = document.getElementById("paymentProofForm");
 const statusDiv = document.getElementById("payment-status");
 const soloSection = document.getElementById("soloSection");
 const teamSection = document.getElementById("teamSection");
@@ -21,6 +23,11 @@ const amountDisplay = document.getElementById("amountDisplay");
 const amountDetail = document.getElementById("amountDetail");
 const btnSolo = document.getElementById("btnSolo");
 const btnTeam = document.getElementById("btnTeam");
+const step1 = document.getElementById("step1");
+const step2 = document.getElementById("step2");
+const step3 = document.getElementById("step3");
+const payAmount = document.getElementById("payAmount");
+const qrcodeDiv = document.getElementById("qrcode");
 
 // ----- Type Selector -----
 btnSolo.addEventListener("click", () => setType("solo"));
@@ -34,7 +41,6 @@ function setType(type) {
   if (type === "solo") {
     soloSection.style.display = "block";
     teamSection.style.display = "none";
-    // make solo required, team not
     setRequired(["soloName","soloEmail","soloPhone","soloCourse"], true);
     setRequired(["teamName","captainName","captainEmail","captainPhone","captainCourse"], false);
     clearTeamRequired();
@@ -43,7 +49,6 @@ function setType(type) {
     teamSection.style.display = "block";
     setRequired(["soloName","soloEmail","soloPhone","soloCourse"], false);
     setRequired(["teamName","captainName","captainEmail","captainPhone","captainCourse"], true);
-    // members already have required when created
     if (memberCount === 0) initMembers();
   }
   updateAmount();
@@ -52,24 +57,20 @@ function setType(type) {
 function setRequired(ids, required) {
   ids.forEach(id => {
     const el = document.getElementById(id);
-    if (el) {
-      if (required) el.setAttribute("required", "");
-      else el.removeAttribute("required");
-    }
+    if (!el) return;
+    if (required) el.setAttribute("required", "");
+    else el.removeAttribute("required");
   });
 }
 
 function clearTeamRequired() {
-  document.querySelectorAll('#membersContainer input').forEach(inp => {
-    inp.removeAttribute("required");
-  });
+  document.querySelectorAll("#membersContainer input").forEach(inp => inp.removeAttribute("required"));
 }
 
 // ----- Members -----
 function createMemberCard(index) {
   const div = document.createElement("div");
   div.className = "member-card";
-  div.dataset.index = index;
   div.innerHTML = `
     <h4>Member ${index + 1}</h4>
     <button type="button" class="remove-member" title="Remove">×</button>
@@ -135,8 +136,7 @@ addMemberBtn.addEventListener("click", () => {
 
 // ----- Amount -----
 function getTotalParticipants() {
-  if (regType === "solo") return 1;
-  return memberCount + 1; // + captain
+  return regType === "solo" ? 1 : memberCount + 1;
 }
 
 function updateAmount() {
@@ -144,7 +144,6 @@ function updateAmount() {
   const amount = count * FEE_PER_PERSON;
   amountDisplay.textContent = `₹${amount}`;
   amountDetail.textContent = `(${count} × ₹${FEE_PER_PERSON})`;
-  payBtn.textContent = `Pay ₹${amount} & Register`;
 }
 
 // ----- Collect Data -----
@@ -163,7 +162,6 @@ function collectFormData() {
     };
   }
 
-  // Team
   const data = {
     type: "team",
     teamName: document.getElementById("teamName").value.trim(),
@@ -194,43 +192,58 @@ function collectFormData() {
   return data;
 }
 
-// ----- Telegram -----
-function formatTelegramMessage(data) {
-  let msg = `🏴‍☠️ *NEW TREASURE HUNT REGISTRATION*\n\n`;
-  msg += `*Type:* ${data.type === "solo" ? "Solo Participant" : "Team"}\n`;
+// ----- UPI QR -----
+function generateUPIQR(amount) {
+  qrcodeDiv.innerHTML = "";
+  const upiString = `upi://pay?pa=${UPI_ID}&pn=${encodeURIComponent(UPI_NAME)}&am=${amount.toFixed(2)}&cu=INR&tn=${encodeURIComponent("MPGI Treasure Hunt Reg")}`;
+  
+  new QRCode(qrcodeDiv, {
+    text: upiString,
+    width: 220,
+    height: 220,
+    colorDark: "#2c1810",
+    colorLight: "#ffffff",
+    correctLevel: QRCode.CorrectLevel.H
+  });
+}
+
+// ----- Telegram helpers -----
+function formatRegMessage(data) {
+  let msg = `🏴‍☠️ *NEW REGISTRATION (Pending Payment)*\n\n`;
+  msg += `*Type:* ${data.type === "solo" ? "Solo" : "Team"}\n`;
   msg += `*Participants:* ${data.participants}\n`;
-  msg += `*Amount:* ₹${data.amount}\n`;
-  msg += `*Payment Link:* ${PAYMENT_LINK}\n\n`;
+  msg += `*Amount to Pay:* ₹${data.amount}\n`;
+  msg += `*UPI:* ${UPI_ID}\n\n`;
 
   if (data.type === "solo") {
-    msg += `👤 *Participant*\n`;
-    msg += `Name: ${data.person.name}\n`;
-    msg += `Email: ${data.person.email}\n`;
-    msg += `Phone: ${data.person.phone}\n`;
-    msg += `Course: ${data.person.course}\n`;
+    msg += `👤 *Participant*\nName: ${data.person.name}\nEmail: ${data.person.email}\nPhone: ${data.person.phone}\nCourse: ${data.person.course}`;
   } else {
     msg += `*Team:* ${data.teamName}\n\n`;
-    msg += `👤 *Captain*\n`;
-    msg += `Name: ${data.captain.name}\n`;
-    msg += `Email: ${data.captain.email}\n`;
-    msg += `Phone: ${data.captain.phone}\n`;
-    msg += `Course: ${data.captain.course}\n\n`;
+    msg += `👤 *Captain*\nName: ${data.captain.name}\nEmail: ${data.captain.email}\nPhone: ${data.captain.phone}\nCourse: ${data.captain.course}\n\n`;
     data.members.forEach((m, i) => {
-      msg += `👤 *Member ${i + 1}*\n`;
-      msg += `Name: ${m.name}\n`;
-      msg += `Email: ${m.email}\n`;
-      msg += `Phone: ${m.phone}\n`;
-      msg += `Course: ${m.course}\n\n`;
+      msg += `👤 *Member ${i + 1}*\nName: ${m.name}\nEmail: ${m.email}\nPhone: ${m.phone}\nCourse: ${m.course}\n\n`;
     });
   }
-  msg += `\n⚠️ Payment pending – user redirected to payment page.`;
   return msg;
 }
 
-async function sendToTelegram(message) {
+function formatProofMessage(data, utr) {
+  let msg = `💰 *PAYMENT PROOF RECEIVED*\n\n`;
+  msg += `*UTR / Txn ID:* \`${utr}\`\n`;
+  msg += `*Amount:* ₹${data.amount}\n`;
+  msg += `*Type:* ${data.type === "solo" ? "Solo" : "Team"}\n`;
+  if (data.type === "solo") {
+    msg += `*Name:* ${data.person.name}\n*Phone:* ${data.person.phone}`;
+  } else {
+    msg += `*Team:* ${data.teamName}\n*Captain:* ${data.captain.name}\n*Phone:* ${data.captain.phone}`;
+  }
+  return msg;
+}
+
+async function sendTelegramText(text) {
   if (TELEGRAM_BOT_TOKEN === "YOUR_BOT_TOKEN" || TELEGRAM_CHAT_ID === "YOUR_CHAT_ID") {
-    console.warn("Telegram credentials not set.");
-    return { ok: false, reason: "credentials_missing" };
+    console.warn("Telegram not configured");
+    return { ok: false };
   }
   try {
     const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
@@ -238,53 +251,102 @@ async function sendToTelegram(message) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         chat_id: TELEGRAM_CHAT_ID,
-        text: message,
+        text: text,
         parse_mode: "Markdown"
       })
     });
     return await res.json();
-  } catch (err) {
-    console.error("Telegram error:", err);
-    return { ok: false, error: err };
+  } catch (e) {
+    console.error(e);
+    return { ok: false };
   }
 }
 
-// ----- Submit -----
+async function sendTelegramPhoto(file, caption) {
+  if (TELEGRAM_BOT_TOKEN === "YOUR_BOT_TOKEN" || TELEGRAM_CHAT_ID === "YOUR_CHAT_ID") {
+    return { ok: false };
+  }
+  const form = new FormData();
+  form.append("chat_id", TELEGRAM_CHAT_ID);
+  form.append("photo", file);
+  form.append("caption", caption);
+  form.append("parse_mode", "Markdown");
+
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, {
+      method: "POST",
+      body: form
+    });
+    return await res.json();
+  } catch (e) {
+    console.error(e);
+    return { ok: false };
+  }
+}
+
+// ----- STEP 1 Submit → Show QR -----
 regForm.addEventListener("submit", async function (e) {
   e.preventDefault();
 
   if (regType === "team" && memberCount < MIN_MEMBERS) {
-    alert(`Please add at least ${MIN_MEMBERS} more members (total team size 3-5).`);
+    alert(`Please add at least ${MIN_MEMBERS} more members (total 3–5).`);
     return;
   }
-
   if (!regForm.checkValidity()) {
     regForm.reportValidity();
     return;
   }
 
-  const formData = collectFormData();
+  savedFormData = collectFormData();
 
-  payBtn.disabled = true;
-  payBtn.textContent = "Processing...";
-  statusDiv.style.display = "block";
-  statusDiv.className = "";
-  statusDiv.innerHTML = "Sending registration details...";
+  // Send registration details to admin (pending payment)
+  await sendTelegramText(formatRegMessage(savedFormData));
 
-  const message = formatTelegramMessage(formData);
-  const tgResult = await sendToTelegram(message);
+  // Show Step 2
+  step1.style.display = "none";
+  step2.style.display = "block";
+  payAmount.textContent = `₹${savedFormData.amount}`;
+  generateUPIQR(savedFormData.amount);
 
-  if (tgResult.ok) {
-    statusDiv.className = "success";
-    statusDiv.innerHTML = `✅ Details sent to admin!<br>Amount: ₹${formData.amount}<br>Redirecting to payment...`;
-  } else {
-    statusDiv.className = "error";
-    statusDiv.innerHTML = `⚠️ Could not notify admin (Telegram not configured).<br>Amount: ₹${formData.amount}<br>Still redirecting to payment...`;
+  window.scrollTo({ top: 0, behavior: "smooth" });
+});
+
+// ----- STEP 2 Submit → UTR + Screenshot -----
+paymentProofForm.addEventListener("submit", async function (e) {
+  e.preventDefault();
+
+  const utr = document.getElementById("utr").value.trim();
+  const fileInput = document.getElementById("screenshot");
+  const file = fileInput.files[0];
+
+  if (!utr || !file) {
+    alert("UTR aur Screenshot dono zaroori hain.");
+    return;
   }
 
-  setTimeout(() => {
-    window.location.href = PAYMENT_LINK;
-  }, 1600);
+  const btn = document.getElementById("submitProofBtn");
+  btn.disabled = true;
+  btn.textContent = "Submitting...";
+  statusDiv.style.display = "block";
+  statusDiv.className = "";
+  statusDiv.innerHTML = "Sending payment proof to admin...";
+
+  // 1. Send text with UTR
+  const textResult = await sendTelegramText(formatProofMessage(savedFormData, utr));
+
+  // 2. Send screenshot
+  const caption = `Payment Screenshot\nUTR: ${utr}\nAmount: ₹${savedFormData.amount}`;
+  const photoResult = await sendTelegramPhoto(file, caption);
+
+  if (textResult.ok || photoResult.ok) {
+    step2.style.display = "none";
+    step3.style.display = "block";
+  } else {
+    statusDiv.className = "error";
+    statusDiv.innerHTML = "⚠️ Telegram not configured or failed.<br>Please contact admin with your UTR and screenshot manually.<br>UTR: " + utr;
+    btn.disabled = false;
+    btn.textContent = "Submit Registration";
+  }
 });
 
 // Init
