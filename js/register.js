@@ -1,6 +1,6 @@
 // ===================== CONFIG =====================
-const TELEGRAM_BOT_TOKEN = "YOUR_BOT_TOKEN";   // @BotFather se
-const TELEGRAM_CHAT_ID = "YOUR_CHAT_ID";       // Admin chat ID
+const TELEGRAM_BOT_TOKEN = "8793018598:AAEiFW2qiyKFsuVkJ5vzgsNj21ZRPB0Y4wI";   // @BotFather se
+const TELEGRAM_CHAT_ID = "6271039736";       // Admin chat ID
 const UPI_ID = "shauryaexploits@fam";
 const UPI_NAME = "MPGI Treasure Hunt";
 const FEE_PER_PERSON = 70;
