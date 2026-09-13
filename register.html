@@ -3,11 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Register Team | MPGI Treasure Hunt</title>
+  <title>Register | MPGI Treasure Hunt</title>
   <link rel="stylesheet" href="css/style.css">
   <link href="https://fonts.googleapis.com/css2?family=Pirata+One&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-  <!-- Razorpay Checkout -->
-  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 </head>
 <body>
   <div class="wooden-bg">
@@ -15,61 +13,101 @@
 
     <div class="main-card">
       <div class="page-header">
-        <h1>🏴‍☠️ Team Registration</h1>
-        <p>MPGI College Treasure Hunt • Entry Fee ₹380</p>
+        <h1>🏴‍☠️ Registration</h1>
+        <p>MPGI College Treasure Hunt • ₹70 per participant</p>
       </div>
 
       <div class="form-container">
+        <!-- Registration Type Selector -->
+        <div class="section-title">Registration Type</div>
+        <div class="type-selector">
+          <button type="button" class="type-btn active" id="btnSolo" data-type="solo">
+            👤 Solo Participant
+            <span class="type-price">₹70</span>
+          </button>
+          <button type="button" class="type-btn" id="btnTeam" data-type="team">
+            🏴‍☠️ Register Your Team
+            <span class="type-price">₹70 × members</span>
+          </button>
+        </div>
+
         <form id="regForm">
-          <!-- Captain / Team Info -->
-          <div class="section-title">Captain & Team Details</div>
+          <!-- Solo Form -->
+          <div id="soloSection">
+            <div class="section-title">Participant Details</div>
 
-          <div class="form-group">
-            <label for="teamName">Team Name *</label>
-            <input type="text" id="teamName" name="teamName" required placeholder="e.g. Pirate Crew">
+            <div class="form-group">
+              <label for="soloName">Full Name *</label>
+              <input type="text" id="soloName" name="soloName">
+            </div>
+            <div class="form-group">
+              <label for="soloEmail">Email *</label>
+              <input type="email" id="soloEmail" name="soloEmail">
+            </div>
+            <div class="form-group">
+              <label for="soloPhone">Phone Number *</label>
+              <input type="tel" id="soloPhone" name="soloPhone" pattern="[0-9]{10}" placeholder="10-digit number">
+            </div>
+            <div class="form-group">
+              <label for="soloCourse">Course & Year *</label>
+              <input type="text" id="soloCourse" name="soloCourse" placeholder="e.g. B.Tech CSE 3rd Year">
+            </div>
           </div>
 
-          <div class="form-group">
-            <label for="captainName">Captain's Full Name *</label>
-            <input type="text" id="captainName" name="captainName" required>
+          <!-- Team Form -->
+          <div id="teamSection" style="display:none;">
+            <div class="section-title">Captain & Team Details</div>
+
+            <div class="form-group">
+              <label for="teamName">Team Name *</label>
+              <input type="text" id="teamName" name="teamName" placeholder="e.g. Pirate Crew">
+            </div>
+
+            <div class="form-group">
+              <label for="captainName">Captain's Full Name *</label>
+              <input type="text" id="captainName" name="captainName">
+            </div>
+
+            <div class="form-group">
+              <label for="captainEmail">Captain's Email *</label>
+              <input type="email" id="captainEmail" name="captainEmail">
+            </div>
+
+            <div class="form-group">
+              <label for="captainPhone">Captain's Phone Number *</label>
+              <input type="tel" id="captainPhone" name="captainPhone" pattern="[0-9]{10}" placeholder="10-digit number">
+            </div>
+
+            <div class="form-group">
+              <label for="captainCourse">Course & Year *</label>
+              <input type="text" id="captainCourse" name="captainCourse" placeholder="e.g. B.Tech CSE 3rd Year">
+            </div>
+
+            <div class="section-title">Team Members (Minimum 3, Maximum 5 including Captain)</div>
+            <p style="margin-bottom:12px; color:#5c4033; font-size:0.9rem;">
+              Captain is already counted. Add 2 to 4 more members. Fee = ₹70 × total members.
+            </p>
+
+            <div id="membersContainer"></div>
+
+            <div class="btn-row">
+              <button type="button" class="btn btn-add" id="addMemberBtn">+ Add Member</button>
+            </div>
           </div>
 
-          <div class="form-group">
-            <label for="captainEmail">Captain's Email *</label>
-            <input type="email" id="captainEmail" name="captainEmail" required>
-          </div>
-
-          <div class="form-group">
-            <label for="captainPhone">Captain's Phone Number *</label>
-            <input type="tel" id="captainPhone" name="captainPhone" required pattern="[0-9]{10}" placeholder="10-digit number">
-          </div>
-
-          <div class="form-group">
-            <label for="captainCourse">Course & Year *</label>
-            <input type="text" id="captainCourse" name="captainCourse" required placeholder="e.g. B.Tech CSE 3rd Year">
-          </div>
-
-          <!-- Members -->
-          <div class="section-title">Team Members (Minimum 3, Maximum 5 including Captain)</div>
-          <p style="margin-bottom:12px; color:#5c4033; font-size:0.9rem;">
-            Captain is already counted. Add 2 to 4 more members.
-          </p>
-
-          <div id="membersContainer">
-            <!-- Member cards will be added here by JS -->
-          </div>
-
-          <div class="btn-row">
-            <button type="button" class="btn btn-add" id="addMemberBtn">+ Add Member</button>
-          </div>
-
+          <!-- Amount + Payment -->
           <div class="section-title">Payment</div>
-          <p style="margin-bottom:15px; color:#5c4033;">
-            Entry Fee: <strong>₹380</strong> (via Razorpay). After successful payment, your registration details will be sent to the admin via Telegram.
+          <div class="amount-box">
+            Total Amount: <strong id="amountDisplay">₹70</strong>
+            <span id="amountDetail">(1 × ₹70)</span>
+          </div>
+          <p style="margin-bottom:15px; color:#5c4033; font-size:0.9rem;">
+            Form submit karne ke baad aap payment page par redirect ho jayenge.<br>
+            Registration details admin ko Telegram par bhej di jayengi.
           </p>
 
           <div class="btn-row">
-            <button type="submit" class="btn btn-primary" id="payBtn">Pay ₹380 & Register</button>
+            <button type="submit" class="btn btn-primary" id="payBtn">Pay ₹70 & Register</button>
           </div>
 
           <div id="payment-status"></div>
