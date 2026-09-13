@@ -141,7 +141,7 @@ body {
 }
 
 .map-image {
-  width: 100%;
+  width: 120%;
   height: auto;
   display: block;
   object-fit: cover;
