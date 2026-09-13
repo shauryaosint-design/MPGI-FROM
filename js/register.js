@@ -1,26 +1,71 @@
 // ===================== CONFIG =====================
-// IMPORTANT: Replace these with your real values before going live
-
-const RAZORPAY_KEY_ID = "rzp_test_XXXXXXXX";   // Your Razorpay Key ID (test or live)
-const TELEGRAM_BOT_TOKEN = "YOUR_BOT_TOKEN";    // From @BotFather
-const TELEGRAM_CHAT_ID = "YOUR_CHAT_ID";        // Your Telegram user/group chat ID
-
-// Entry fee in paise (380 INR = 38000 paise)
-const ENTRY_FEE = 38000;
-
+const TELEGRAM_BOT_TOKEN = "8793018598:AAEiFW2qiyKFsuVkJ5vzgsNj21ZRPB0Y4wI";
+const TELEGRAM_CHAT_ID = "6271039736";
+const PAYMENT_LINK = "https://razorpay.me/@realencesolutions";
+const FEE_PER_PERSON = 70; // ₹70 per participant
 // ==================================================
 
+let regType = "solo"; // "solo" or "team"
 let memberCount = 0;
-const MIN_MEMBERS = 2; // additional members (total team 3 including captain)
-const MAX_MEMBERS = 4; // additional members (total team 5 including captain)
+const MIN_MEMBERS = 2; // additional (total 3)
+const MAX_MEMBERS = 4; // additional (total 5)
 
 const membersContainer = document.getElementById("membersContainer");
 const addMemberBtn = document.getElementById("addMemberBtn");
 const regForm = document.getElementById("regForm");
 const payBtn = document.getElementById("payBtn");
 const statusDiv = document.getElementById("payment-status");
+const soloSection = document.getElementById("soloSection");
+const teamSection = document.getElementById("teamSection");
+const amountDisplay = document.getElementById("amountDisplay");
+const amountDetail = document.getElementById("amountDetail");
+const btnSolo = document.getElementById("btnSolo");
+const btnTeam = document.getElementById("btnTeam");
 
-// Create one member card
+// ----- Type Selector -----
+btnSolo.addEventListener("click", () => setType("solo"));
+btnTeam.addEventListener("click", () => setType("team"));
+
+function setType(type) {
+  regType = type;
+  btnSolo.classList.toggle("active", type === "solo");
+  btnTeam.classList.toggle("active", type === "team");
+
+  if (type === "solo") {
+    soloSection.style.display = "block";
+    teamSection.style.display = "none";
+    // make solo required, team not
+    setRequired(["soloName","soloEmail","soloPhone","soloCourse"], true);
+    setRequired(["teamName","captainName","captainEmail","captainPhone","captainCourse"], false);
+    clearTeamRequired();
+  } else {
+    soloSection.style.display = "none";
+    teamSection.style.display = "block";
+    setRequired(["soloName","soloEmail","soloPhone","soloCourse"], false);
+    setRequired(["teamName","captainName","captainEmail","captainPhone","captainCourse"], true);
+    // members already have required when created
+    if (memberCount === 0) initMembers();
+  }
+  updateAmount();
+}
+
+function setRequired(ids, required) {
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      if (required) el.setAttribute("required", "");
+      else el.removeAttribute("required");
+    }
+  });
+}
+
+function clearTeamRequired() {
+  document.querySelectorAll('#membersContainer input').forEach(inp => {
+    inp.removeAttribute("required");
+  });
+}
+
+// ----- Members -----
 function createMemberCard(index) {
   const div = document.createElement("div");
   div.className = "member-card";
@@ -28,7 +73,6 @@ function createMemberCard(index) {
   div.innerHTML = `
     <h4>Member ${index + 1}</h4>
     <button type="button" class="remove-member" title="Remove">×</button>
-    
     <div class="form-group">
       <label>Full Name *</label>
       <input type="text" name="memberName[]" required>
@@ -46,40 +90,38 @@ function createMemberCard(index) {
       <input type="text" name="memberCourse[]" required placeholder="e.g. B.Tech ECE 2nd Year">
     </div>
   `;
-
   div.querySelector(".remove-member").addEventListener("click", () => {
     div.remove();
     memberCount--;
     updateAddButton();
     renumberMembers();
+    updateAmount();
   });
-
   return div;
 }
 
 function renumberMembers() {
-  const cards = membersContainer.querySelectorAll(".member-card");
-  cards.forEach((card, i) => {
+  membersContainer.querySelectorAll(".member-card").forEach((card, i) => {
     card.querySelector("h4").textContent = `Member ${i + 1}`;
   });
 }
 
 function updateAddButton() {
   addMemberBtn.disabled = memberCount >= MAX_MEMBERS;
-  if (memberCount >= MAX_MEMBERS) {
-    addMemberBtn.textContent = "Maximum members reached";
-  } else {
-    addMemberBtn.textContent = `+ Add Member (${memberCount}/${MAX_MEMBERS})`;
-  }
+  addMemberBtn.textContent = memberCount >= MAX_MEMBERS
+    ? "Maximum members reached"
+    : `+ Add Member (${memberCount}/${MAX_MEMBERS})`;
 }
 
-// Initial: add 2 members so total becomes 3
 function initMembers() {
+  membersContainer.innerHTML = "";
+  memberCount = 0;
   for (let i = 0; i < MIN_MEMBERS; i++) {
     membersContainer.appendChild(createMemberCard(i));
     memberCount++;
   }
   updateAddButton();
+  updateAmount();
 }
 
 addMemberBtn.addEventListener("click", () => {
@@ -87,13 +129,46 @@ addMemberBtn.addEventListener("click", () => {
     membersContainer.appendChild(createMemberCard(memberCount));
     memberCount++;
     updateAddButton();
+    updateAmount();
   }
 });
 
-// Collect all form data
+// ----- Amount -----
+function getTotalParticipants() {
+  if (regType === "solo") return 1;
+  return memberCount + 1; // + captain
+}
+
+function updateAmount() {
+  const count = getTotalParticipants();
+  const amount = count * FEE_PER_PERSON;
+  amountDisplay.textContent = `₹${amount}`;
+  amountDetail.textContent = `(${count} × ₹${FEE_PER_PERSON})`;
+  payBtn.textContent = `Pay ₹${amount} & Register`;
+}
+
+// ----- Collect Data -----
 function collectFormData() {
+  if (regType === "solo") {
+    return {
+      type: "solo",
+      participants: 1,
+      amount: FEE_PER_PERSON,
+      person: {
+        name: document.getElementById("soloName").value.trim(),
+        email: document.getElementById("soloEmail").value.trim(),
+        phone: document.getElementById("soloPhone").value.trim(),
+        course: document.getElementById("soloCourse").value.trim()
+      }
+    };
+  }
+
+  // Team
   const data = {
+    type: "team",
     teamName: document.getElementById("teamName").value.trim(),
+    participants: memberCount + 1,
+    amount: (memberCount + 1) * FEE_PER_PERSON,
     captain: {
       name: document.getElementById("captainName").value.trim(),
       email: document.getElementById("captainEmail").value.trim(),
@@ -103,66 +178,69 @@ function collectFormData() {
     members: []
   };
 
-  const nameInputs = document.querySelectorAll('input[name="memberName[]"]');
-  const emailInputs = document.querySelectorAll('input[name="memberEmail[]"]');
-  const phoneInputs = document.querySelectorAll('input[name="memberPhone[]"]');
-  const courseInputs = document.querySelectorAll('input[name="memberCourse[]"]');
+  const names = document.querySelectorAll('input[name="memberName[]"]');
+  const emails = document.querySelectorAll('input[name="memberEmail[]"]');
+  const phones = document.querySelectorAll('input[name="memberPhone[]"]');
+  const courses = document.querySelectorAll('input[name="memberCourse[]"]');
 
-  for (let i = 0; i < nameInputs.length; i++) {
+  for (let i = 0; i < names.length; i++) {
     data.members.push({
-      name: nameInputs[i].value.trim(),
-      email: emailInputs[i].value.trim(),
-      phone: phoneInputs[i].value.trim(),
-      course: courseInputs[i].value.trim()
+      name: names[i].value.trim(),
+      email: emails[i].value.trim(),
+      phone: phones[i].value.trim(),
+      course: courses[i].value.trim()
     });
   }
-
   return data;
 }
 
-// Format message for Telegram
-function formatTelegramMessage(data, paymentId) {
+// ----- Telegram -----
+function formatTelegramMessage(data) {
   let msg = `🏴‍☠️ *NEW TREASURE HUNT REGISTRATION*\n\n`;
-  msg += `*Team:* ${data.teamName}\n`;
-  msg += `*Payment ID:* ${paymentId}\n`;
-  msg += `*Amount:* ₹380\n\n`;
-  msg += `👤 *Captain*\n`;
-  msg += `Name: ${data.captain.name}\n`;
-  msg += `Email: ${data.captain.email}\n`;
-  msg += `Phone: ${data.captain.phone}\n`;
-  msg += `Course: ${data.captain.course}\n\n`;
+  msg += `*Type:* ${data.type === "solo" ? "Solo Participant" : "Team"}\n`;
+  msg += `*Participants:* ${data.participants}\n`;
+  msg += `*Amount:* ₹${data.amount}\n`;
+  msg += `*Payment Link:* ${PAYMENT_LINK}\n\n`;
 
-  data.members.forEach((m, i) => {
-    msg += `👤 *Member ${i + 1}*\n`;
-    msg += `Name: ${m.name}\n`;
-    msg += `Email: ${m.email}\n`;
-    msg += `Phone: ${m.phone}\n`;
-    msg += `Course: ${m.course}\n\n`;
-  });
-
-  msg += `Total Members: ${data.members.length + 1}`;
+  if (data.type === "solo") {
+    msg += `👤 *Participant*\n`;
+    msg += `Name: ${data.person.name}\n`;
+    msg += `Email: ${data.person.email}\n`;
+    msg += `Phone: ${data.person.phone}\n`;
+    msg += `Course: ${data.person.course}\n`;
+  } else {
+    msg += `*Team:* ${data.teamName}\n\n`;
+    msg += `👤 *Captain*\n`;
+    msg += `Name: ${data.captain.name}\n`;
+    msg += `Email: ${data.captain.email}\n`;
+    msg += `Phone: ${data.captain.phone}\n`;
+    msg += `Course: ${data.captain.course}\n\n`;
+    data.members.forEach((m, i) => {
+      msg += `👤 *Member ${i + 1}*\n`;
+      msg += `Name: ${m.name}\n`;
+      msg += `Email: ${m.email}\n`;
+      msg += `Phone: ${m.phone}\n`;
+      msg += `Course: ${m.course}\n\n`;
+    });
+  }
+  msg += `\n⚠️ Payment pending – user redirected to payment page.`;
   return msg;
 }
 
-// Send to Telegram Bot
 async function sendToTelegram(message) {
   if (TELEGRAM_BOT_TOKEN === "YOUR_BOT_TOKEN" || TELEGRAM_CHAT_ID === "YOUR_CHAT_ID") {
-    console.warn("Telegram credentials not set. Skipping notification.");
+    console.warn("Telegram credentials not set.");
     return { ok: false, reason: "credentials_missing" };
   }
-
-  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-  const body = {
-    chat_id: TELEGRAM_CHAT_ID,
-    text: message,
-    parse_mode: "Markdown"
-  };
-
   try {
-    const res = await fetch(url, {
+    const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body)
+      body: JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID,
+        text: message,
+        parse_mode: "Markdown"
+      })
     });
     return await res.json();
   } catch (err) {
@@ -171,79 +249,11 @@ async function sendToTelegram(message) {
   }
 }
 
-// Razorpay Payment
-function startPayment(formData) {
-  const options = {
-    key: RAZORPAY_KEY_ID,
-    amount: ENTRY_FEE,
-    currency: "INR",
-    name: "MPGI Treasure Hunt",
-    description: `Team Registration - ${formData.teamName}`,
-    image: "https://img.icons8.com/color/96/treasure-chest.png",
-    handler: async function (response) {
-      // Payment successful
-      statusDiv.className = "success";
-      statusDiv.innerHTML = "✅ Payment Successful! Sending details to admin...";
-      statusDiv.style.display = "block";
-
-      const message = formatTelegramMessage(formData, response.razorpay_payment_id);
-      const tgResult = await sendToTelegram(message);
-
-      if (tgResult.ok) {
-        statusDiv.innerHTML = "✅ Registration Complete!<br>Payment ID: " + response.razorpay_payment_id + "<br>Details sent to admin via Telegram.";
-      } else {
-        statusDiv.innerHTML = "✅ Payment Successful (ID: " + response.razorpay_payment_id + ")<br>⚠️ Could not send Telegram notification. Please contact admin with payment ID.";
-      }
-
-      payBtn.disabled = true;
-      payBtn.textContent = "Registered ✓";
-      regForm.reset();
-      // Clear members and re-init
-      membersContainer.innerHTML = "";
-      memberCount = 0;
-      initMembers();
-    },
-    prefill: {
-      name: formData.captain.name,
-      email: formData.captain.email,
-      contact: formData.captain.phone
-    },
-    notes: {
-      team_name: formData.teamName,
-      college: "MPGI"
-    },
-    theme: {
-      color: "#8b4513"
-    },
-    modal: {
-      ondismiss: function () {
-        statusDiv.className = "error";
-        statusDiv.innerHTML = "Payment cancelled. You can try again.";
-        statusDiv.style.display = "block";
-      }
-    }
-  };
-
-  // Check if key is still placeholder
-  if (RAZORPAY_KEY_ID === "rzp_test_XXXXXXXX") {
-    alert("⚠️ Razorpay Key ID is not configured.\n\nPlease open js/register.js and replace RAZORPAY_KEY_ID with your real Key ID from Razorpay Dashboard.\n\nFor testing you can use a test key.");
-    // For demo purposes, simulate success
-    if (confirm("Simulate successful payment for demo?")) {
-      options.handler({ razorpay_payment_id: "pay_demo_" + Date.now() });
-    }
-    return;
-  }
-
-  const rzp = new Razorpay(options);
-  rzp.open();
-}
-
-// Form submit
-regForm.addEventListener("submit", function (e) {
+// ----- Submit -----
+regForm.addEventListener("submit", async function (e) {
   e.preventDefault();
 
-  // Validate member count
-  if (memberCount < MIN_MEMBERS) {
+  if (regType === "team" && memberCount < MIN_MEMBERS) {
     alert(`Please add at least ${MIN_MEMBERS} more members (total team size 3-5).`);
     return;
   }
@@ -254,8 +264,28 @@ regForm.addEventListener("submit", function (e) {
   }
 
   const formData = collectFormData();
-  startPayment(formData);
+
+  payBtn.disabled = true;
+  payBtn.textContent = "Processing...";
+  statusDiv.style.display = "block";
+  statusDiv.className = "";
+  statusDiv.innerHTML = "Sending registration details...";
+
+  const message = formatTelegramMessage(formData);
+  const tgResult = await sendToTelegram(message);
+
+  if (tgResult.ok) {
+    statusDiv.className = "success";
+    statusDiv.innerHTML = `✅ Details sent to admin!<br>Amount: ₹${formData.amount}<br>Redirecting to payment...`;
+  } else {
+    statusDiv.className = "error";
+    statusDiv.innerHTML = `⚠️ Could not notify admin (Telegram not configured).<br>Amount: ₹${formData.amount}<br>Still redirecting to payment...`;
+  }
+
+  setTimeout(() => {
+    window.location.href = PAYMENT_LINK;
+  }, 1600);
 });
 
-// Initialize
-initMembers();
+// Init
+setType("solo");
